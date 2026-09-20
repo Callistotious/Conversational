@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Talk Cards</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="top">
+  <h1>Talk Cards</h1>
+  <div class="menu">
+    <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
+    </button>
+    <div class="menu-list" id="menuList" hidden>
+      <button id="editBtn">Edit cards</button>
+    </div>
+  </div>
+</header>
+
+  <div class="chips" id="chips" role="group" aria-label="Themes"></div>
+
+  <div class="stage">
+    <button class="card" id="card" aria-label="Card. Tap to flip.">
+      <div class="face back">
+        <div class="theme" id="backTheme"></div>
+        <div class="hint">Tap to flip</div>
+      </div>
+      <div class="face front">
+        <div class="tag" id="tag"></div>
+        <div class="q" id="question" aria-live="polite"></div>
+        <div class="foot">Tap to flip back</div>
+      </div>
+    </button>
+  </div>
+
+  <div class="progress">
+    <div class="bar"><i id="fill"></i></div>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="controls">
+    <button class="round" id="prev" aria-label="Previous card">
+      <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <button class="pill" id="shuffle">
+      <svg viewBox="0 0 24 24"><path d="M3 7h3.5c2 0 3.2 1 4.3 2.7l2.4 3.6c1.1 1.7 2.3 2.7 4.3 2.7H21M3 17h3.5c1.4 0 2.4-.5 3.2-1.4M21 7h-3.5c-1.4 0-2.4.5-3.2 1.4M18 4l3 3-3 3M18 14l3 3-3 3"/></svg>
+      Shuffle
+    </button>
+    <button class="round" id="next" aria-label="Next card">
+      <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+
+  <button class="link" id="fresh">Get new questions for this theme</button>
+  <div class="status" id="status" role="status"></div>
+
+<dialog id="editor">
+  <div class="ed-head">
+    <h2>Edit cards</h2>
+    <button class="ed-close" id="edClose" aria-label="Close">&times;</button>
+  </div>
+  <div class="ed-body" id="edBody"></div>
+  <div class="ed-foot">
+    <span class="ed-msg" id="edMsg"></span>
+    <button class="btn-soft" id="edReset">Reset</button>
+    <button class="btn-main" id="edSave">Save</button>
+  </div>
+</dialog>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+<script src="js/config.js"></script>
+<script src="js/local-config.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
