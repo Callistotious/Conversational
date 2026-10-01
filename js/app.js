@@ -209,13 +209,32 @@
   }
 
     // ---- Edit cards ----
+    var MY_ID = (function () {
+    try {
+      var id = localStorage.getItem("talkcards_myid");
+      if (!id) {
+        id = "u_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem("talkcards_myid", id);
+      }
+      return id;
+    } catch (e) { return "u_anon"; }
+  })();
+
+  function normalizeItem(item) {
+    if (typeof item === "string") return { text: item, by: null };
+    return { text: item.text, by: item.by || null };
+  }
+
   var STORE_KEY = "talkcards_added";
   var BASE = {};
   order.forEach(function (k) { BASE[k] = THEMES[k].cards.slice(); });
   var ADDED = { freedom: [], deal: [], intimacy: [], love: [] };
 
   function rebuildCards() {
-    order.forEach(function (k) { THEMES[k].cards = BASE[k].concat(ADDED[k]); });
+    order.forEach(function (k) {
+      var extra = ADDED[k].map(function (item) { return normalizeItem(item).text; });
+      THEMES[k].cards = BASE[k].concat(extra);
+    });
   }
   function saveAddedLocally() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(ADDED)); } catch (e) {}
@@ -265,21 +284,30 @@
 
       var list = document.createElement("ul");
       list.className = "ed-added";
-      ADDED[k].forEach(function (q, i) {
+      ADDED[k].forEach(function (raw, i) {
+        var item = normalizeItem(raw);
         var li = document.createElement("li");
         var span = document.createElement("span");
-        span.textContent = q;
-        var x = document.createElement("button");
-        x.className = "ed-x"; x.type = "button"; x.textContent = "\u00d7";
-        x.setAttribute("aria-label", "Remove this card");
-        x.addEventListener("click", function () {
-          ADDED[k].splice(i, 1);
-          rebuildCards(); saveAddedLocally();
-          if (DOC) DOC.set(makeOut(), { merge: true }).catch(function () {});
-          renderEditor();
-          setTheme(current);
-        });
-        li.appendChild(span); li.appendChild(x);
+        span.textContent = item.text;
+        li.appendChild(span);
+        if (item.by === MY_ID) {
+          var x = document.createElement("button");
+          x.className = "ed-x"; x.type = "button"; x.textContent = "\u00d7";
+          x.setAttribute("aria-label", "Remove this card");
+          x.addEventListener("click", function () {
+            ADDED[k].splice(i, 1);
+            rebuildCards(); saveAddedLocally();
+            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function () {});
+            renderEditor();
+            setTheme(current);
+          });
+          li.appendChild(x);
+        } else {
+          var lock = document.createElement("span");
+          lock.className = "ed-lock";
+          lock.textContent = "Added by someone else";
+          li.appendChild(lock);
+        }
         list.appendChild(li);
       });
       sec.appendChild(list);
@@ -295,13 +323,15 @@
       });
       var add = document.createElement("button");
       add.type = "button"; add.textContent = "Add";
+
       function submit() {
         var text = input.value.trim();
         if (!text) return;
-        ADDED[k].push(text);
+        var entry = { text: text, by: MY_ID };
+        ADDED[k].push(entry);
         rebuildCards(); saveAddedLocally();
         if (DOC) {
-          var fv = firebase.firestore.FieldValue.arrayUnion(text);
+          var fv = firebase.firestore.FieldValue.arrayUnion(entry);
           var patch = {}; patch[k] = fv;
           DOC.set(patch, { merge: true }).catch(function (err) { $("edMsg").textContent = "Saved here, but not in the cloud: " + err.message; });
         }
@@ -310,6 +340,7 @@
         renderEditor();
         setTheme(current);
       }
+      
       add.addEventListener("click", submit);
       input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
       row.appendChild(input); row.appendChild(add);
