@@ -79,9 +79,7 @@
     idx = 0;
     setFace(false);
     render();
-    document.querySelectorAll(".chip").forEach(function (b) {
-      b.setAttribute("aria-pressed", b.dataset.theme === theme ? "true" : "false");
-    });
+    $("themeSelect").value = theme;
     if (theme === "all") document.documentElement.style.setProperty("--accent", THEMES[deck[0].t].color);
     setStatus("");
   }
@@ -92,19 +90,17 @@
     s.className = "status" + (isErr ? " err" : "");
   }
 
-  // Chips
-  (function makeChips() {
-    var wrap = $("chips");
-    function add(key, label, color) {
-      var b = document.createElement("button");
-      b.className = "chip"; b.textContent = label; b.dataset.theme = key;
-      b.setAttribute("aria-pressed", "false");
-      if (color) b.style.setProperty("--c", color);
-      b.addEventListener("click", function () { setTheme(key); });
-      wrap.appendChild(b);
+  // Theme dropdown
+  (function populateThemeSelect() {
+    var sel = $("themeSelect");
+    function addOption(key, label) {
+      var o = document.createElement("option");
+      o.value = key; o.textContent = label;
+      sel.appendChild(o);
     }
-    add("all", "All themes", "#e8edf6");
-    order.forEach(function (k) { add(k, THEMES[k].name, THEMES[k].color); });
+    addOption("all", "All themes");
+    order.forEach(function (k) { addOption(k, THEMES[k].name); });
+    sel.addEventListener("change", function () { setTheme(sel.value); });
   })();
 
   // Card interaction
@@ -213,15 +209,24 @@
   }
 
     // ---- Edit cards ----
-  var STORE_KEY = "talkcards_edits";
-  var ORIGINAL = {};
-  order.forEach(function (k) { ORIGINAL[k] = THEMES[k].cards.slice(); });
+  var STORE_KEY = "talkcards_added";
+  var BASE = {};
+  order.forEach(function (k) { BASE[k] = THEMES[k].cards.slice(); });
+  var ADDED = { freedom: [], deal: [], intimacy: [], love: [] };
 
-  // Load edits saved earlier in this browser
+  function rebuildCards() {
+    order.forEach(function (k) { THEMES[k].cards = BASE[k].concat(ADDED[k]); });
+  }
+  function saveAddedLocally() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(ADDED)); } catch (e) {}
+  }
+
+  // Load anything added earlier in this browser, before Firebase answers
   try {
     var saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
-    if (saved) order.forEach(function (k) { if (Array.isArray(saved[k]) && saved[k].length) THEMES[k].cards = saved[k]; });
+    if (saved) order.forEach(function (k) { if (Array.isArray(saved[k])) ADDED[k] = saved[k]; });
   } catch (e) {}
+  rebuildCards();
 
    // Firebase database (optional)
   var DOC = null;
@@ -249,48 +254,77 @@
   var editor = $("editor");
   var edBody = $("edBody");
 
-  function makeRow(text) {
-    var row = document.createElement("div");
-    row.className = "ed-row";
-    var ta = document.createElement("textarea");
-    ta.rows = 2;
-    ta.value = text;
-    ta.setAttribute("aria-label", "Card text");
-    var del = document.createElement("button");
-    del.type = "button";
-    del.className = "ed-del";
-    del.textContent = "Delete";
-    del.addEventListener("click", function () { row.remove(); });
-    row.appendChild(ta);
-    row.appendChild(del);
-    return row;
-  }
-
-  function renderEditor() {
+   function renderEditor() {
     edBody.innerHTML = "";
     order.forEach(function (k) {
       var sec = document.createElement("section");
-      sec.dataset.theme = k;
       var h = document.createElement("h3");
       h.textContent = THEMES[k].name;
       h.style.setProperty("--c", THEMES[k].color);
       sec.appendChild(h);
-      var list = document.createElement("div");
-      THEMES[k].cards.forEach(function (q) { list.appendChild(makeRow(q)); });
-      sec.appendChild(list);
-      var add = document.createElement("button");
-      add.type = "button";
-      add.className = "ed-add";
-      add.textContent = "Add a card";
-      add.addEventListener("click", function () {
-        var r = makeRow("");
-        list.appendChild(r);
-        r.querySelector("textarea").focus();
+
+      var list = document.createElement("ul");
+      list.className = "ed-added";
+      ADDED[k].forEach(function (q, i) {
+        var li = document.createElement("li");
+        var span = document.createElement("span");
+        span.textContent = q;
+        var x = document.createElement("button");
+        x.className = "ed-x"; x.type = "button"; x.textContent = "\u00d7";
+        x.setAttribute("aria-label", "Remove this card");
+        x.addEventListener("click", function () {
+          ADDED[k].splice(i, 1);
+          rebuildCards(); saveAddedLocally();
+          if (DOC) DOC.set(makeOut(), { merge: true }).catch(function () {});
+          renderEditor();
+          setTheme(current);
+        });
+        li.appendChild(span); li.appendChild(x);
+        list.appendChild(li);
       });
-      sec.appendChild(add);
+      sec.appendChild(list);
+
+      var row = document.createElement("div");
+      row.className = "ed-new";
+      var input = document.createElement("textarea");
+      input.rows = 3;
+      input.placeholder = "Write a new " + THEMES[k].name.toLowerCase() + " question";
+      input.addEventListener("input", function () {
+        input.style.height = "auto";
+        input.style.height = input.scrollHeight + "px";
+      });
+      var add = document.createElement("button");
+      add.type = "button"; add.textContent = "Add";
+      function submit() {
+        var text = input.value.trim();
+        if (!text) return;
+        ADDED[k].push(text);
+        rebuildCards(); saveAddedLocally();
+        if (DOC) {
+          var fv = firebase.firestore.FieldValue.arrayUnion(text);
+          var patch = {}; patch[k] = fv;
+          DOC.set(patch, { merge: true }).catch(function (err) { $("edMsg").textContent = "Saved here, but not in the cloud: " + err.message; });
+        }
+        input.value = "";
+        input.style.height = "";
+        renderEditor();
+        setTheme(current);
+      }
+      add.addEventListener("click", submit);
+      input.addEventListener("keydown", function (e) { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } });
+      row.appendChild(input); row.appendChild(add);
+      sec.appendChild(row);
+
       edBody.appendChild(sec);
     });
   }
+
+  function makeOut() {
+    var out = {};
+    order.forEach(function (k) { out[k] = ADDED[k]; });
+    return out;
+  }
+
 
   $("editBtn").addEventListener("click", function () {
     renderEditor();
@@ -299,48 +333,15 @@
   });
   $("edClose").addEventListener("click", function () { editor.close(); });
 
-  $("edSave").addEventListener("click", function () {
-    var out = {};
-    var ok = true;
-    edBody.querySelectorAll("section").forEach(function (sec) {
-      var k = sec.dataset.theme;
-      out[k] = Array.prototype.map.call(sec.querySelectorAll("textarea"), function (t) { return t.value.trim(); })
-        .filter(function (s) { return s.length > 0; });
-      if (out[k].length === 0) ok = false;
-    });
-    if (!ok) { $("edMsg").textContent = "Each theme needs at least one card."; return; }
-    order.forEach(function (k) { THEMES[k].cards = out[k]; });
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(out)); } catch (e) {}
-    editor.close();
-    setTheme(current);
-    setStatus("Cards saved.");
-        if (DOC) {
-      setStatus("Saving to the cloud...");
-      DOC.set(out)
-        .then(function () { setStatus("Cards saved to the cloud."); })
-        .catch(function (err) { setStatus("Saved on this device only. Cloud error: " + err.message, true); });
-    }
-  });
-
-  $("edReset").addEventListener("click", function () {
-    order.forEach(function (k) { THEMES[k].cards = ORIGINAL[k].slice(); });
-    try { localStorage.removeItem(STORE_KEY); } catch (e) {}
-    if (DOC) DOC.delete().catch(function () {});
-    renderEditor();
-    $("edMsg").textContent = "";
-    setTheme(current);
-  });
-
-  setTheme("all");
+ 
   
-    if (DOC) {
+   if (DOC) {
     DOC.get().then(function (snap) {
       if (!snap.exists) return;
       var data = snap.data();
-      order.forEach(function (k) { if (Array.isArray(data[k]) && data[k].length) THEMES[k].cards = data[k]; });
-      try { localStorage.setItem(STORE_KEY, JSON.stringify(data)); } catch (e) {}
+      order.forEach(function (k) { if (Array.isArray(data[k])) ADDED[k] = data[k]; });
+      rebuildCards(); saveAddedLocally();
       setTheme(current);
     }).catch(function (err) { setStatus("Could not load from the cloud: " + err.message, true); });
-      if (!(CONFIG.GEMINI_API_KEY || "").trim()) $("fresh").hidden = true;
   }
 })();

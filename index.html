@@ -17,12 +17,15 @@
       <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
     </button>
     <div class="menu-list" id="menuList" hidden>
-      <button id="editBtn">Edit cards</button>
+      <button id="editBtn">Add cards</button>
     </div>
   </div>
 </header>
 
-  <div class="chips" id="chips" role="group" aria-label="Themes"></div>
+ <div class="theme-select">
+    <select id="themeSelect" aria-label="Theme"></select>
+    <svg class="ts-caret" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+  </div>
 
   <div class="stage">
     <button class="card" id="card" aria-label="Card. Tap to flip.">
@@ -61,15 +64,13 @@
 
 <dialog id="editor">
   <div class="ed-head">
-    <h2>Edit cards</h2>
+    <h2>Add your own cards</h2>
     <button class="ed-close" id="edClose" aria-label="Close">&times;</button>
   </div>
   <div class="ed-body" id="edBody"></div>
-  <div class="ed-foot">
-    <span class="ed-msg" id="edMsg"></span>
-    <button class="btn-soft" id="edReset">Reset</button>
-    <button class="btn-main" id="edSave">Save</button>
-  </div>
+ <div class="ed-foot">
+      <span class="ed-msg" id="edMsg"></span>
+    </div>
 </dialog>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
