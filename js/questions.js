@@ -30,8 +30,7 @@ window.TALK_CARDS = {
       "What books have you read lately?",
       "Is mental health important and how do you maintain it?",
       "What are your religious views?",
-      "Is crying a sign of weakness?",
-      "Should abortion be legal?"
+      "Is crying a sign of weakness?"
     ]
   },
   deal: {
@@ -85,7 +84,6 @@ window.TALK_CARDS = {
       "Are you comfortable initiating sex, or would you prefer your partner to do so?",
       "How do you feel about public sex?",
       "How do you feel about condoms? How often do you use them?",
-      "Are you okay having casual sex? Explain why/why not.",
       "What is you're worst experience during coitus?"
     ]
   },
@@ -122,6 +120,40 @@ window.TALK_CARDS = {
       "Who should pay on the first date?",
       "Are you comfortable farting in front of your partner? How long does it take to gain this comfort?",
       "Are you comfortable with your partner making more or less money than you? Does their gender matter?"
+    ]
+  },
+  character: {
+    name: "Character and Morality", color: "var(--character)",
+    brief: "values, ethics, morals, integrity, honesty, loyalty, trust, respect",
+    cards: [
+      "Do you think that peoplel who are incarcerated for serious crimes deserve a second chance in society?",
+      "Is poverty a result of choices made by people who experienced it, or by political and economic systems that benefit from it?",
+      "Is it more important to be tactful or truthful?",
+      "Are you pro-life or pro-choice?",
+      "How do you handle rejection?",
+      "If you had the power to do so, what would you change about today's society?",
+      "In today's society, which sex has it easier? Why?",
+      "How do you prefer to be approached when you are sad or angry?",
+      "Is it okay to retaliate against someone who has hurt you? Explain.",
+      "If you see a person physically abusing their significant other in public, what would you say or do?",
+      "Does lateness annoy you?",
+      "Would you be okay kissing someone who is HIV positive?",
+      "Do you believe that money can/does buy happiness?",
+      "Are there any circumstances that justify a partner physically hitting you and why?",
+      "Do you feel good after winning a point in an argument?",
+      "Do you require alot of alone time and why?",
+      "How do you feel about circumcision and vaccinations for children?",
+      "How should mental-health driven crime be handled?",
+      "Do you ignore homeless people who ask for money on the streets?",
+      "How do you want to be remembered when you die?",
+      "If you had the ability to change one thing about yourself, what would it be and why?",
+      "Does racism, tribalism and colorism exist in today's society? Explain.",
+      "What are your thoughts on classism?",
+      "Should sex work be legal?",
+      "Are you okay having casual sex? Explain why/why not.",
+      "When you're upset with someone, are you more likely to confront the issue right away, or wait until you've calmed down?",
+      "How do you feel about the 'N' word?",
+      "What is the most challenging thing you've ever been through in life?"
     ]
   }
 };

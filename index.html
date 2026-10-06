@@ -16,8 +16,9 @@
     <button class="menu-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="Menu">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="19" r="1.7"/></svg>
     </button>
-    <div class="menu-list" id="menuList" hidden>
+   <div class="menu-list" id="menuList" hidden>
       <button id="editBtn">Add cards</button>
+      <button id="adminBtn">Admin</button>
     </div>
   </div>
 </header>
@@ -72,6 +73,16 @@
       <span class="ed-msg" id="edMsg"></span>
     </div>
 </dialog>
+<dialog id="adminDialog">
+    <div class="ed-head">
+      <h2>Admin — manage added cards</h2>
+      <button class="ed-close" id="adminClose" aria-label="Close">&times;</button>
+    </div>
+    <div class="ed-body" id="adminBody"></div>
+    <div class="ed-foot">
+      <span class="ed-msg" id="adminMsg"></span>
+    </div>
+  </dialog>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
 <script src="js/config.js"></script>

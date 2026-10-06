@@ -8,6 +8,8 @@ window.TALK_CONFIG = {
   GEMINI_API_KEY: "",
   MODEL: "gemini-3.6-flash",
 
+  ADMIN_PASSWORD: "connect",
+
   FIREBASE: {
     apiKey:"AIzaSyASo1OImQciM2lPuPnaZoQ3q5wHiNqJaqc",
     authDomain: "verbal-connections.firebaseapp.com",

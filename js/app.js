@@ -5,7 +5,7 @@
 
   var THEMES = window.TALK_CARDS;
 
-  var order = ["freedom", "deal", "intimacy", "love"];
+  var order = ["freedom", "deal", "intimacy", "love", "character"];
   var current = "all";
   var deck = [];
   var idx = 0;
@@ -163,11 +163,10 @@
     var user = "Theme: " + theme.name + ". Subtopics: " + theme.brief + ". " +
       "Write 6 new questions that are different from these: " + existing;
 
-    fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent", {
+    fetch("https://generativelanguage.googleapis.com/v1beta/models/" + encodeURIComponent(model) + ":generateContent?key=" + encodeURIComponent(key), {
       method: "POST",
       headers: {
-        "content-type": "application/json",
-        "x-goog-api-key": key
+        "content-type": "application/json"
       },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
@@ -192,12 +191,21 @@
       var list = JSON.parse(text);
       list = list.filter(function (q) { return typeof q === "string" && q.length > 5; });
       if (!list.length) throw new Error("No questions came back.");
-      list.forEach(function (q) { theme.cards.push(q); });
+
+      var entries = list.map(function (q) { return { text: q, by: MY_ID, source: "ai" }; });
+      entries.forEach(function (e) { ADDED[themeKey].push(e); });
+      rebuildCards(); saveAddedLocally();
+      if (DOC) {
+        var fv = firebase.firestore.FieldValue.arrayUnion.apply(null, entries);
+        var patch = {}; patch[themeKey] = fv;
+        DOC.set(patch, { merge: true }).catch(function (err) { setStatus("Added here, but not saved to the cloud: " + err.message, true); });
+      }
+
       var fresh = list.map(function (q) { return { q: q, t: themeKey }; });
       deck.splice.apply(deck, [idx + 1, 0].concat(fresh));
       $("count").textContent = (idx + 1) + " of " + deck.length;
       $("fill").style.width = ((idx + 1) / deck.length * 100) + "%";
-      setStatus(list.length + " new questions added. Tap next to see them.");
+      setStatus(list.length + " new questions added and saved to the cloud. Tap next to see them.");
     })
     .catch(function (err) {
       var msg = err && err.message ? err.message : "Something went wrong.";
@@ -221,14 +229,14 @@
   })();
 
   function normalizeItem(item) {
-    if (typeof item === "string") return { text: item, by: null };
-    return { text: item.text, by: item.by || null };
+    if (typeof item === "string") return { text: item, by: null, source: "manual" };
+    return { text: item.text, by: item.by || null, source: item.source || "manual" };
   }
 
   var STORE_KEY = "talkcards_added";
   var BASE = {};
   order.forEach(function (k) { BASE[k] = THEMES[k].cards.slice(); });
-  var ADDED = { freedom: [], deal: [], intimacy: [], love: [] };
+  var ADDED = { freedom: [], deal: [], intimacy: [], love: [], character: [] };
 
   function rebuildCards() {
     order.forEach(function (k) {
@@ -327,7 +335,7 @@
       function submit() {
         var text = input.value.trim();
         if (!text) return;
-        var entry = { text: text, by: MY_ID };
+        var entry = { text: text, by: MY_ID, source: "manual" };
         ADDED[k].push(entry);
         rebuildCards(); saveAddedLocally();
         if (DOC) {
@@ -364,6 +372,95 @@
   });
   $("edClose").addEventListener("click", function () { editor.close(); });
 
+
+  
+  // ---- Admin ----
+  var adminDialog = $("adminDialog");
+  var adminBody = $("adminBody");
+
+  function renderAdmin() {
+    adminBody.innerHTML = "";
+    order.forEach(function (k) {
+      var sec = document.createElement("section");
+      var h = document.createElement("h3");
+      h.textContent = THEMES[k].name;
+      h.style.setProperty("--c", THEMES[k].color);
+      sec.appendChild(h);
+
+      var manualEntries = [];
+      var aiEntries = [];
+      ADDED[k].forEach(function (raw, i) {
+        var item = normalizeItem(raw);
+        (item.source === "ai" ? aiEntries : manualEntries).push({ item: item, i: i });
+      });
+
+      function renderGroup(label, entries) {
+        if (!entries.length) return;
+        var groupLabel = document.createElement("div");
+        groupLabel.className = "ed-group-label";
+        groupLabel.textContent = label;
+        sec.appendChild(groupLabel);
+        entries.forEach(function (entry) {
+          var i = entry.i;
+          var row = document.createElement("div");
+          row.className = "ed-edit-row";
+          var ta = document.createElement("textarea");
+          ta.rows = 2;
+          ta.value = entry.item.text;
+          var saveBtn = document.createElement("button");
+          saveBtn.className = "ed-save"; saveBtn.type = "button"; saveBtn.textContent = "Save";
+          saveBtn.addEventListener("click", function () {
+            var newText = ta.value.trim();
+            if (!newText) return;
+            var normalized = normalizeItem(ADDED[k][i]);
+            ADDED[k][i] = { text: newText, by: normalized.by, source: normalized.source };
+            rebuildCards(); saveAddedLocally();
+            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function (err) {
+              $("adminMsg").textContent = "Saved here, but not in the cloud: " + err.message;
+            });
+            renderAdmin();
+            setTheme(current);
+          });
+          var delBtn = document.createElement("button");
+          delBtn.className = "ed-x"; delBtn.type = "button"; delBtn.textContent = "\u00d7";
+          delBtn.setAttribute("aria-label", "Remove this card");
+          delBtn.addEventListener("click", function () {
+            ADDED[k].splice(i, 1);
+            rebuildCards(); saveAddedLocally();
+            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function () {});
+            renderAdmin();
+            setTheme(current);
+          });
+          row.appendChild(ta); row.appendChild(saveBtn); row.appendChild(delBtn);
+          sec.appendChild(row);
+        });
+      }
+
+      renderGroup("Added manually", manualEntries);
+      renderGroup("AI-generated", aiEntries);
+
+      if (!manualEntries.length && !aiEntries.length) {
+        var none = document.createElement("div");
+        none.className = "ed-lock";
+        none.textContent = "No added cards yet for this theme.";
+        sec.appendChild(none);
+      }
+
+      adminBody.appendChild(sec);
+    });
+  }
+
+  $("adminBtn").addEventListener("click", function () {
+    var pw = (CONFIG.ADMIN_PASSWORD || "").trim();
+    if (!pw) { alert("Set ADMIN_PASSWORD in js/config.js first."); return; }
+    var entered = window.prompt("Admin password:");
+    if (entered === null) return;
+    if (entered !== pw) { alert("Incorrect password."); return; }
+    renderAdmin();
+    $("adminMsg").textContent = "";
+    adminDialog.showModal();
+  });
+  $("adminClose").addEventListener("click", function () { adminDialog.close(); });
  
   
    if (DOC) {
