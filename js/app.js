@@ -305,7 +305,7 @@
           x.addEventListener("click", function () {
             ADDED[k].splice(i, 1);
             rebuildCards(); saveAddedLocally();
-            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function () {});
+            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function (err) { setStatus("Delete didn't reach the cloud: " + err.message, true); });
             renderEditor();
             setTheme(current);
           });
@@ -427,7 +427,7 @@
           delBtn.addEventListener("click", function () {
             ADDED[k].splice(i, 1);
             rebuildCards(); saveAddedLocally();
-            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function () {});
+            if (DOC) DOC.set(makeOut(), { merge: true }).catch(function (err) { setStatus("Delete didn't reach the cloud: " + err.message, true); });
             renderAdmin();
             setTheme(current);
           });
